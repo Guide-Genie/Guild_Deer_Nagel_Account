@@ -222,7 +222,18 @@ function updateQty(index) {
 
 function updatePrice(index) {
   const priceInput = document.getElementById(`price-${index}`);
-  items[index].price = parseFloat(priceInput.value) || 0;
+  const rawInput = priceInput.value.trim();
+  if (items[index].code.startsWith("Nagel_")) {
+    const val = parseFloat(rawInput);
+    if (!isNaN(val)) {
+      items[index].price = Math.round(val * 100000000);
+      priceInput.value = val; // 입력은 억 단위 유지
+    } else {
+      items[index].price = 0;
+    }
+  } else {
+    items[index].price = parseFloat(rawInput) || 0;
+  }
   calculateAll();
 }
 
