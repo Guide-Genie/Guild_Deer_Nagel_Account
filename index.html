@@ -223,8 +223,21 @@ function formatKoreanUnit(value) {
 }
 
 function createRow(item, index) {
-  const priceInput = item.calc ? `<span id="price-${index}">${formatKoreanUnit(item.calc())}</span>`
-                               : `<input type="number" id="price-${index}" value="${item.price}" step="${item.step}" onchange="updatePrice(${index})">`;
+  let priceInput;
+
+  if (item.calc) {
+    priceInput = `
+      <div>
+        <input type="checkbox" id="manual-${index}" onchange="toggleManual(${index})">
+        <label for="manual-${index}" style="font-size:0.9em; color:#aaa">수동입력</label><br>
+        <span id="price-auto-${index}">${formatKoreanUnit(item.calc())}</span>
+        <input type="number" id="price-input-${index}" value="0" step="0.1" style="display:none; margin-top:4px;" onchange="manualPriceChanged(${index})">
+      </div>
+    `;
+  } else {
+    priceInput = `<input type="number" id="price-${index}" value="${item.price}" step="${item.step}" onchange="updatePrice(${index})">`;
+  }
+
   return `
     <tr>
       <td><img src="${item.img}"> ${item.name}</td>
@@ -241,6 +254,7 @@ function createRow(item, index) {
     </tr>
   `;
 }
+
 
 function updateQty(index) {
   const qtyInput = document.getElementById(`qty-${index}`);
@@ -259,7 +273,28 @@ function updatePrice(index) {
   }
   calculateAll();
 }
+function toggleManual(index) {
+  const checkbox = document.getElementById(`manual-${index}`);
+  const manualInput = document.getElementById(`price-input-${index}`);
+  const autoPrice = document.getElementById(`price-auto-${index}`);
 
+  if (checkbox.checked) {
+    manualInput.style.display = 'inline-block';
+    autoPrice.style.display = 'none';
+    manualPriceChanged(index); // 적용
+  } else {
+    manualInput.style.display = 'none';
+    autoPrice.style.display = 'inline-block';
+  }
+  calculateAll();
+}
+
+function manualPriceChanged(index) {
+  const input = document.getElementById(`price-input-${index}`);
+  const val = parseFloat(input.value) || 0;
+  items[index].price = val * 100000000;
+  calculateAll();
+}
 function changeQty(index, delta) {
   const qtyInput = document.getElementById(`qty-${index}`);
   const newQty = Math.max(0, parseInt(qtyInput.value) + delta);
@@ -305,12 +340,23 @@ function calculateAll() {
   let grandTotal = 0;
 
   items.forEach((item, index) => {
-    if (item.calc) item.price = item.calc();
+    if (item.calc) {
+      const isManual = document.getElementById(`manual-${index}`)?.checked;
+      if (!isManual) {
+        item.price = item.calc();
+      } else {
+        const manualInput = document.getElementById(`price-input-${index}`);
+        item.price = (parseFloat(manualInput?.value) || 0) * 100000000;
+      }
+
+      const autoPriceEl = document.getElementById(`price-auto-${index}`);
+      if (autoPriceEl) autoPriceEl.textContent = formatKoreanUnit(item.calc());
+    }
+
     const total = item.qty * item.price;
     grandTotal += total;
     const split = total / memberCount;
-    const priceElement = document.getElementById(`price-${index}`);
-    if (item.calc && priceElement) priceElement.textContent = formatKoreanUnit(item.price);
+
     document.getElementById(`total-${index}`).textContent = total ? formatKoreanUnit(total) : '0';
     document.getElementById(`split-${index}`).textContent = split ? formatKoreanUnit(split) : '0';
   });
