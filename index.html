@@ -201,7 +201,15 @@ const items = [
   { code: "Nagel_Sun",  name: "나겔링 해스톤",   price: 10, qty: 0, img: "resized/Nagel_Sun.png", step: 0.5 },
   { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 10, qty: 0, img: "resized/Nagel_Moon.png", step: 0.5 },
   { code: "Nagel_Core", name: "나겔링코어스톤",  price: 40, qty: 0, img: "resized/Nagel_Core.png", step: 1 },
+  { code: "Draw_Star", name: "연금도면A : 나겔링 별스톤", price: 0, qty: 0, img: "resized/Drawing.png", calc: () => getPrice('Nagel_Star') - getPrice('Mado_Star') * 50 },
+  { code: "Draw_Moon", name: "연금도면A : 나겔링 달스톤", price: 0, qty: 0, img: "resized/Drawing.png", calc: () => getPrice('Nagel_Moon') - getPrice('Mado_Moon') * 50 },
+  { code: "Draw_Sun",  name: "연금도면A : 나겔링 해스톤", price: 0, qty: 0, img: "resized/Drawing.png", calc: () => getPrice('Nagel_Sun') - getPrice('Mado_Sun') * 50 },
 ];
+
+function getPrice(code) {
+  const item = items.find(i => i.code === code);
+  return item ? item.price : 0;
+}
 
 function formatKoreanUnit(value) {
   const eok = Math.floor(value / 100000000);
@@ -210,10 +218,12 @@ function formatKoreanUnit(value) {
 }
 
 function createRow(item, index) {
+  const priceInput = item.calc ? `<span id="price-${index}">${formatKoreanUnit(item.calc())}</span>`
+                               : `<input type="number" id="price-${index}" value="${item.price}" step="${item.step}" onchange="updatePrice(${index})">`;
   return `
     <tr>
       <td><img src="${item.img}"> ${item.name}</td>
-      <td><input type="number" id="price-${index}" value="${item.price}" step="${item.step}" onchange="updatePrice(${index})"></td>
+      <td>${priceInput}</td>
       <td>
         <div class="qty-buttons">
           <button onclick="changeQty(${index}, -1)">-</button>
@@ -238,7 +248,7 @@ function updatePrice(index) {
   const val = parseFloat(priceInput.value);
   if (val < 1000) {
     items[index].price = val * 100000000;
-    priceInput.value = val; // 유지
+    priceInput.value = val;
   } else {
     items[index].price = val || 0;
   }
@@ -262,8 +272,12 @@ function loadData() {
   const savedItems = JSON.parse(localStorage.getItem("nagel_items"));
   if (savedItems) {
     savedItems.forEach((data, i) => {
-      items[i].qty = data.qty;
-      items[i].price = data.price;
+      if (!items[i].calc) {
+        items[i].qty = data.qty;
+        items[i].price = data.price;
+      } else {
+        items[i].qty = data.qty;
+      }
     });
   }
   const savedCount = localStorage.getItem("nagel_memberCount");
@@ -280,9 +294,12 @@ function calculateAll() {
   let grandTotal = 0;
 
   items.forEach((item, index) => {
+    if (item.calc) item.price = item.calc();
     const total = item.qty * item.price;
     grandTotal += total;
     const split = total / memberCount;
+    const priceElement = document.getElementById(`price-${index}`);
+    if (item.calc && priceElement) priceElement.textContent = formatKoreanUnit(item.price);
     document.getElementById(`total-${index}`).textContent = total ? formatKoreanUnit(total) : '0';
     document.getElementById(`split-${index}`).textContent = split ? formatKoreanUnit(split) : '0';
   });
@@ -290,11 +307,7 @@ function calculateAll() {
   const grandSplit = grandTotal / memberCount;
   document.getElementById("grandTotal").textContent = formatKoreanUnit(grandTotal);
   document.getElementById("grandSplit").textContent = formatKoreanUnit(grandSplit);
-
-  const carrotCount = Math.floor(grandSplit / carrotUnit);
-  const carrotRest = grandSplit % carrotUnit;
-  document.getElementById("carrotInfo").textContent = `${carrotCount}개 + ${formatKoreanUnit(carrotRest)}`;
-
+  document.getElementById("carrotInfo").textContent = `${Math.floor(grandSplit / carrotUnit)}개 + ${formatKoreanUnit(grandSplit % carrotUnit)}`;
   document.getElementById("copyGold").textContent = Math.floor(grandTotal / 100000) * 100000;
   document.getElementById("copySplit").textContent = Math.floor(grandSplit / 100000) * 100000;
 
@@ -304,17 +317,16 @@ function calculateAll() {
 function resetAll() {
   items.forEach((item, i) => {
     item.qty = 0;
-    document.getElementById(`qty-${i}`).value = 0;
+    const qtyInput = document.getElementById(`qty-${i}`);
+    if (qtyInput) qtyInput.value = 0;
     document.getElementById(`total-${i}`).textContent = '0';
     document.getElementById(`split-${i}`).textContent = '0';
   });
-
   document.getElementById("grandTotal").textContent = '0';
   document.getElementById("grandSplit").textContent = '0';
   document.getElementById("copyGold").textContent = '0';
   document.getElementById("copySplit").textContent = '0';
   document.getElementById("carrotInfo").textContent = '-';
-
   saveData();
 }
 
@@ -322,6 +334,7 @@ document.getElementById("itemTable").innerHTML = items.map(createRow).join("");
 loadData();
 calculateAll();
 </script>
+
 
 </body>
 </html>
