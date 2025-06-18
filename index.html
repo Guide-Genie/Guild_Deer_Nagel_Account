@@ -197,13 +197,17 @@ const items = [
   { code: "Mado_Star", name: "마도코어 별스톤", price: 5000000, qty: 0, img: "resized/Mado_Star.png", step: 500000 },
   { code: "Mado_Moon", name: "마도코어 달스톤", price: 5000000, qty: 0, img: "resized/Mado_Moon.png", step: 500000 },
   { code: "Mado_Sun",  name: "마도코어 해스톤", price: 5000000, qty: 0, img: "resized/Mado_Sun.png", step: 500000 },
+
   { code: "Nagel_Star", name: "나겔링 별스톤",   price: 10, qty: 0, img: "resized/Nagel_Star.png", step: 0.5 },
-  { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 10, qty: 0, img: "resized/Nagel_Moon.png", step: 0.5 }, 
+  { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 10, qty: 0, img: "resized/Nagel_Moon.png", step: 0.5 },
   { code: "Nagel_Sun",  name: "나겔링 해스톤",   price: 10, qty: 0, img: "resized/Nagel_Sun.png", step: 0.5 },
+  
   { code: "Nagel_Core", name: "나겔링코어스톤",  price: 40, qty: 0, img: "resized/Nagel_Core.png", step: 1 },
+  
   { code: "Draw_Star", name: "연금도면A : 나겔링 별스톤", price: 0, qty: 0, img: "resized/Drawing.png", calc: () => getPrice('Nagel_Star') - getPrice('Mado_Star') * 50 },
   { code: "Draw_Moon", name: "연금도면A : 나겔링 달스톤", price: 0, qty: 0, img: "resized/Drawing.png", calc: () => getPrice('Nagel_Moon') - getPrice('Mado_Moon') * 50 },
   { code: "Draw_Sun",  name: "연금도면A : 나겔링 해스톤", price: 0, qty: 0, img: "resized/Drawing.png", calc: () => getPrice('Nagel_Sun') - getPrice('Mado_Sun') * 50 },
+  
 ];
 
 function getPrice(code) {
@@ -284,6 +288,12 @@ function loadData() {
   if (savedCount) document.getElementById("memberCount").value = savedCount;
 }
 
+function initializePrices() {
+  items.forEach((item, index) => {
+    if (!item.calc) updatePrice(index);
+  });
+}
+
 function copyToClipboard(id) {
   const value = document.getElementById(id).textContent;
   navigator.clipboard.writeText(value);
@@ -332,9 +342,9 @@ function resetAll() {
 
 document.getElementById("itemTable").innerHTML = items.map(createRow).join("");
 loadData();
+initializePrices();
 calculateAll();
 </script>
-
 
 </body>
 </html>
