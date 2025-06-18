@@ -54,6 +54,7 @@
       text-align: center;
       border-bottom: 1px solid #444;
       white-space: nowrap;
+      min-width: 140px;
     }
     th {
       background: #333;
@@ -193,14 +194,20 @@
 <script>
 const carrotUnit = 120000000;
 const items = [
-  { code: "Mado_Star", name: "마도코어 별스톤", price: 5000000, qty: 0, img: "resized/Mado_Star.png", step: 500000 },
-  { code: "Mado_Sun",  name: "마도코어 해스톤", price: 5000000, qty: 0, img: "resized/Mado_Sun.png", step: 500000 },
-  { code: "Mado_Moon", name: "마도코어 달스톤", price: 5000000, qty: 0, img: "resized/Mado_Moon.png", step: 500000 },
-  { code: "Nagel_Star", name: "나겔링 별스톤",   price: 10, qty: 0, img: "resized/Nagel_Star.png", step: 0.5 },
-  { code: "Nagel_Sun",  name: "나겔링 해스톤",   price: 10, qty: 0, img: "resized/Nagel_Sun.png", step: 0.5 },
-  { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 10, qty: 0, img: "resized/Nagel_Moon.png", step: 0.5 },
-  { code: "Nagel_Core", name: "나겔링코어스톤",  price: 40, qty: 0, img: "resized/Nagel_Core.png", step: 1 },
+  { code: "Mado_Star", name: "마도코어 별스톤", price: 3000000, qty: 0, img: "resized/Mado_Star.png", step: 100000 },
+  { code: "Mado_Sun",  name: "마도코어 해스톤", price: 3000000, qty: 0, img: "resized/Mado_Sun.png", step: 100000 },
+  { code: "Mado_Moon", name: "마도코어 달스톤", price: 3000000, qty: 0, img: "resized/Mado_Moon.png", step: 100000 },
+  { code: "Nagel_Star", name: "나겔링 별스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Star.png", step: 50000000 },
+  { code: "Nagel_Sun",  name: "나겔링 해스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Sun.png", step: 50000000 },
+  { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Moon.png", step: 50000000 },
+  { code: "Nagel_Core", name: "나겔링코어스톤",  price: 4000000000, qty: 0, img: "resized/Nagel_Core.png", step: 100000000 },
 ];
+
+function formatKoreanUnit(value) {
+  const eok = Math.floor(value / 100000000);
+  const man = Math.floor((value % 100000000) / 10000);
+  return `${eok}억${man > 0 ? ' ' + man + '만' : ''} 골드`;
+}
 
 function createRow(item, index) {
   return `
@@ -214,22 +221,10 @@ function createRow(item, index) {
           <button onclick="changeQty(${index}, 1)">+</button>
         </div>
       </td>
-      <td id="total-${index}" style="min-width:150px; text-align:right">0</td>
-      <td id="split-${index}" style="min-width:150px; text-align:right">0</td>
+      <td id="total-${index}" style="text-align:right">0</td>
+      <td id="split-${index}" style="text-align:right">0</td>
     </tr>
   `;
-}
-
-function formatKoreanUnit(value) {
-  if (value >= 100000000) {
-    const eok = Math.floor(value / 100000000);
-    const man = Math.floor((value % 100000000) / 10000);
-    return `${eok}억${man > 0 ? ' ' + man + '만' : ''} 골드`;
-  } else if (value >= 10000) {
-    return `${Math.floor(value / 10000)}만 골드`;
-  } else {
-    return `${value.toLocaleString()} 골드`;
-  }
 }
 
 function updateQty(index) {
@@ -240,17 +235,12 @@ function updateQty(index) {
 
 function updatePrice(index) {
   const priceInput = document.getElementById(`price-${index}`);
-  let input = priceInput.value.trim();
-  if (items[index].code.startsWith("Nagel_")) {
-    const value = parseFloat(input);
-    if (!isNaN(value)) {
-      items[index].price = Math.round(value * 100000000);
-      priceInput.value = value;
-    } else {
-      items[index].price = 0;
-    }
+  const val = parseFloat(priceInput.value);
+  if (val < 1000) {
+    items[index].price = val * 100000000;
+    priceInput.value = val; // 유지
   } else {
-    items[index].price = parseFloat(input) || 0;
+    items[index].price = val || 0;
   }
   calculateAll();
 }
@@ -261,11 +251,6 @@ function changeQty(index, delta) {
   qtyInput.value = newQty;
   items[index].qty = newQty;
   calculateAll();
-}
-
-function copyToClipboard(elementId) {
-  const value = document.getElementById(elementId).textContent;
-  navigator.clipboard.writeText(value.replace(/,/g, ''));
 }
 
 function saveData() {
@@ -285,6 +270,11 @@ function loadData() {
   if (savedCount) document.getElementById("memberCount").value = savedCount;
 }
 
+function copyToClipboard(id) {
+  const value = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(value);
+}
+
 function calculateAll() {
   const memberCount = parseInt(document.getElementById("memberCount").value) || 13;
   let grandTotal = 0;
@@ -292,9 +282,9 @@ function calculateAll() {
   items.forEach((item, index) => {
     const total = item.qty * item.price;
     grandTotal += total;
-    const split = item.qty > 0 ? total / memberCount : 0;
-    document.getElementById(`total-${index}`).textContent = formatKoreanUnit(total);
-    document.getElementById(`split-${index}`).textContent = formatKoreanUnit(split);
+    const split = total / memberCount;
+    document.getElementById(`total-${index}`).textContent = total ? formatKoreanUnit(total) : '0';
+    document.getElementById(`split-${index}`).textContent = split ? formatKoreanUnit(split) : '0';
   });
 
   const grandSplit = grandTotal / memberCount;
@@ -318,11 +308,13 @@ function resetAll() {
     document.getElementById(`total-${i}`).textContent = '0';
     document.getElementById(`split-${i}`).textContent = '0';
   });
+
   document.getElementById("grandTotal").textContent = '0';
   document.getElementById("grandSplit").textContent = '0';
   document.getElementById("copyGold").textContent = '0';
   document.getElementById("copySplit").textContent = '0';
   document.getElementById("carrotInfo").textContent = '-';
+
   saveData();
 }
 
