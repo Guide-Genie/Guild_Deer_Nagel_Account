@@ -21,10 +21,25 @@
       color: #bbb;
       margin-left: 10px;
     }
-    label {
-      display: block;
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
       margin-bottom: 20px;
+    }
+    label {
       font-size: 1.1em;
+    }
+    button.reset-btn {
+      background: #ff4444;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.reset-btn:hover {
+      background: #ff6666;
     }
     table {
       width: 100%;
@@ -135,11 +150,14 @@
   <span>by 곽진희</span>
 </h1>
 
-<label>파티 인원수:
-  <input type="number" id="memberCount" value="13" min="1" max="13" onchange="calculateAll()">
-</label>
+<div class="input-row">
+  <label>파티 인원수:
+    <input type="number" id="memberCount" value="13" min="1" max="13" onchange="calculateAll()">
+  </label>
+  <button class="reset-btn" onclick="resetAll()">리셋</button>
+</div>
 
-<table border="0">
+<table>
   <thead>
     <tr>
       <th>아이템</th>
@@ -175,13 +193,13 @@
 <script>
 const carrotUnit = 120000000;
 const items = [
-  { code: "Mado_Star", name: "마도코어 별스톤", price: 3000000, qty: 0, img: "resized/Mado_Star.png", step: 100000 },
-  { code: "Mado_Sun",  name: "마도코어 해스톤", price: 3000000, qty: 0, img: "resized/Mado_Sun.png", step: 100000 },
-  { code: "Mado_Moon", name: "마도코어 달스톤", price: 3000000, qty: 0, img: "resized/Mado_Moon.png", step: 100000 },
-  { code: "Nagel_Star", name: "나겔링 별스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Star.png", step: 50000000 },
-  { code: "Nagel_Sun",  name: "나겔링 해스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Sun.png", step: 50000000 },
-  { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Moon.png", step: 50000000 },
-  { code: "Nagel_Core", name: "나겔링코어스톤",  price: 4000000000, qty: 0, img: "resized/Nagel_Core.png", step: 100000000 },
+  { code: "Mado_Star", name: "마도코어 별스톤", price: 5000000, qty: 0, img: "resized/Mado_Star.png", step: 500000 },
+  { code: "Mado_Sun",  name: "마도코어 해스톤", price: 5000000, qty: 0, img: "resized/Mado_Sun.png", step: 500000 },
+  { code: "Mado_Moon", name: "마도코어 달스톤", price: 5000000, qty: 0, img: "resized/Mado_Moon.png", step: 500000 },
+  { code: "Nagel_Star", name: "나겔링 별스톤",   price: 10, qty: 0, img: "resized/Nagel_Star.png", step: 0.5 },
+  { code: "Nagel_Sun",  name: "나겔링 해스톤",   price: 10, qty: 0, img: "resized/Nagel_Sun.png", step: 0.5 },
+  { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 10, qty: 0, img: "resized/Nagel_Moon.png", step: 0.5 },
+  { code: "Nagel_Core", name: "나겔링코어스톤",  price: 40, qty: 0, img: "resized/Nagel_Core.png", step: 1 },
 ];
 
 function createRow(item, index) {
@@ -222,17 +240,17 @@ function updateQty(index) {
 
 function updatePrice(index) {
   const priceInput = document.getElementById(`price-${index}`);
-  const rawInput = priceInput.value.trim();
+  let input = priceInput.value.trim();
   if (items[index].code.startsWith("Nagel_")) {
-    const val = parseFloat(rawInput);
-    if (!isNaN(val)) {
-      items[index].price = Math.round(val * 100000000);
-      priceInput.value = val; // 입력은 억 단위 유지
+    const value = parseFloat(input);
+    if (!isNaN(value)) {
+      items[index].price = Math.round(value * 100000000);
+      priceInput.value = value;
     } else {
       items[index].price = 0;
     }
   } else {
-    items[index].price = parseFloat(rawInput) || 0;
+    items[index].price = parseFloat(input) || 0;
   }
   calculateAll();
 }
@@ -243,6 +261,11 @@ function changeQty(index, delta) {
   qtyInput.value = newQty;
   items[index].qty = newQty;
   calculateAll();
+}
+
+function copyToClipboard(elementId) {
+  const value = document.getElementById(elementId).textContent;
+  navigator.clipboard.writeText(value.replace(/,/g, ''));
 }
 
 function saveData() {
@@ -262,44 +285,44 @@ function loadData() {
   if (savedCount) document.getElementById("memberCount").value = savedCount;
 }
 
-function copyToClipboard(elementId) {
-  const value = document.getElementById(elementId).textContent.replace(/,/g, '');
-  navigator.clipboard.writeText(value).then(() => {
-    alert(`${value} 골드가 복사되었습니다.`);
-  });
-}
-
 function calculateAll() {
   const memberCount = parseInt(document.getElementById("memberCount").value) || 13;
   let grandTotal = 0;
 
   items.forEach((item, index) => {
     const total = item.qty * item.price;
-    const split = total / memberCount;
-
-    if (item.qty === 0) {
-      document.getElementById(`total-${index}`).textContent = "0";
-      document.getElementById(`split-${index}`).textContent = "0";
-    } else {
-      grandTotal += total;
-      document.getElementById(`total-${index}`).textContent = formatKoreanUnit(total);
-      document.getElementById(`split-${index}`).textContent = formatKoreanUnit(split);
-    }
+    grandTotal += total;
+    const split = item.qty > 0 ? total / memberCount : 0;
+    document.getElementById(`total-${index}`).textContent = formatKoreanUnit(total);
+    document.getElementById(`split-${index}`).textContent = formatKoreanUnit(split);
   });
 
   const grandSplit = grandTotal / memberCount;
-  const roundedTotal = Math.floor(grandTotal / 100000) * 100000;
-  const roundedSplit = Math.floor(grandSplit / 100000) * 100000;
-
   document.getElementById("grandTotal").textContent = formatKoreanUnit(grandTotal);
   document.getElementById("grandSplit").textContent = formatKoreanUnit(grandSplit);
-  document.getElementById("copyGold").textContent = roundedTotal.toLocaleString();
-  document.getElementById("copySplit").textContent = roundedSplit.toLocaleString();
 
   const carrotCount = Math.floor(grandSplit / carrotUnit);
   const carrotRest = grandSplit % carrotUnit;
   document.getElementById("carrotInfo").textContent = `${carrotCount}개 + ${formatKoreanUnit(carrotRest)}`;
 
+  document.getElementById("copyGold").textContent = Math.floor(grandTotal / 100000) * 100000;
+  document.getElementById("copySplit").textContent = Math.floor(grandSplit / 100000) * 100000;
+
+  saveData();
+}
+
+function resetAll() {
+  items.forEach((item, i) => {
+    item.qty = 0;
+    document.getElementById(`qty-${i}`).value = 0;
+    document.getElementById(`total-${i}`).textContent = '0';
+    document.getElementById(`split-${i}`).textContent = '0';
+  });
+  document.getElementById("grandTotal").textContent = '0';
+  document.getElementById("grandSplit").textContent = '0';
+  document.getElementById("copyGold").textContent = '0';
+  document.getElementById("copySplit").textContent = '0';
+  document.getElementById("carrotInfo").textContent = '-';
   saveData();
 }
 
