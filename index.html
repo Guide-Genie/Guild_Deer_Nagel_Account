@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>나겔링 회계 도우미</title>
+  <style>
+    body {
+      background: #1e1e1e;
+      color: #eee;
+      font-family: 'Noto Sans KR', sans-serif;
+      padding: 40px;
+      margin: 0;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 30px;
+      color: #ffcc00;
+    }
+    h1 span {
+      font-size: 0.6em;
+      color: #bbb;
+      margin-left: 10px;
+    }
+    label {
+      display: block;
+      margin-bottom: 20px;
+      font-size: 1.1em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #2a2a2a;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+    th, td {
+      padding: 14px 12px;
+      text-align: center;
+      border-bottom: 1px solid #444;
+      white-space: nowrap;
+    }
+    th {
+      background: #333;
+      color: #ffcc00;
+      font-weight: bold;
+    }
+    img {
+      width: 24px;
+      height: 24px;
+      vertical-align: middle;
+    }
+    .qty-buttons button {
+      margin: 0 4px;
+      background: #444;
+      border: none;
+      color: #fff;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .qty-buttons button:hover {
+      background: #666;
+    }
+    input[type="number"] {
+      width: 100px;
+      padding: 6px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background: #1a1a1a;
+      color: #eee;
+      text-align: right;
+    }
+    .summary {
+      margin-top: 30px;
+      font-size: 1.2em;
+      color: #ffcc00;
+      background: #292929;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.4);
+    }
+    .unit-line {
+      margin-top: 10px;
+      font-size: 1em;
+      color: #ccc;
+    }
+    #grandTotal, #grandSplit {
+      display: inline-block;
+      min-width: 150px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+<h1>
+  나겔링 회계 도우미
+  <span>by 곽진희</span>
+</h1>
+
+<label>파티 인원수:
+  <input type="number" id="memberCount" value="1" min="1" onchange="calculateAll()">
+</label>
+
+<table border="0">
+  <thead>
+    <tr>
+      <th>아이템</th>
+      <th>시세</th>
+      <th>수량</th>
+      <th>합계</th>
+      <th>1/N</th>
+    </tr>
+  </thead>
+  <tbody id="itemTable"></tbody>
+</table>
+
+<div class="summary">
+  총 합계: <span id="grandTotal">0</span><br>
+  1/N 금액: <span id="grandSplit">0</span>
+  <div class="unit-line">
+    <img src="resized/Carrot_Fabric.png" alt="캐롯원단"> 환산: <span id="carrotInfo">-</span>
+  </div>
+</div>
+
+<script>
+const carrotUnit = 120000000;
+const items = [
+  { code: "Mado_Star", name: "마도코어 별스톤", price: 3000000, qty: 0, img: "resized/Mado_Star.png", step: 100000 },
+  { code: "Mado_Sun",  name: "마도코어 해스톤", price: 3000000, qty: 0, img: "resized/Mado_Sun.png", step: 100000 },
+  { code: "Mado_Moon", name: "마도코어 달스톤", price: 3000000, qty: 0, img: "resized/Mado_Moon.png", step: 100000 },
+  { code: "Nagel_Star", name: "나겔링 별스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Star.png", step: 50000000 },
+  { code: "Nagel_Sun",  name: "나겔링 해스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Sun.png", step: 50000000 },
+  { code: "Nagel_Moon", name: "나겔링 달스톤",   price: 1000000000, qty: 0, img: "resized/Nagel_Moon.png", step: 50000000 },
+  { code: "Nagel_Core", name: "나겔링코어스톤",  price: 4000000000, qty: 0, img: "resized/Nagel_Core.png", step: 100000000 },
+];
+
+function createRow(item, index) {
+  return `
+    <tr>
+      <td><img src="${item.img}"> ${item.name}</td>
+      <td><input type="number" id="price-${index}" value="${item.price}" step="${item.step}" onchange="updatePrice(${index})"></td>
+      <td>
+        <div class="qty-buttons">
+          <button onclick="changeQty(${index}, -1)">-</button>
+          <input type="number" id="qty-${index}" value="${item.qty}" min="0" onchange="updateQty(${index})">
+          <button onclick="changeQty(${index}, 1)">+</button>
+        </div>
+      </td>
+      <td id="total-${index}" style="min-width:150px; text-align:right">0</td>
+      <td id="split-${index}" style="min-width:150px; text-align:right">0</td>
+    </tr>
+  `;
+}
+
+function formatKoreanUnit(value) {
+  if (value >= 100000000) {
+    const eok = Math.floor(value / 100000000);
+    const man = Math.floor((value % 100000000) / 10000);
+    return `${eok}억${man > 0 ? ' ' + man + '만' : ''} 골드`;
+  } else if (value >= 10000) {
+    return `${Math.floor(value / 10000)}만 골드`;
+  } else {
+    return `${value.toLocaleString()} 골드`;
+  }
+}
+
+function updateQty(index) {
+  const qtyInput = document.getElementById(`qty-${index}`);
+  items[index].qty = Math.max(0, parseInt(qtyInput.value) || 0);
+  calculateAll();
+}
+
+function updatePrice(index) {
+  const priceInput = document.getElementById(`price-${index}`);
+  items[index].price = parseFloat(priceInput.value) || 0;
+  calculateAll();
+}
+
+function changeQty(index, delta) {
+  const qtyInput = document.getElementById(`qty-${index}`);
+  const newQty = Math.max(0, parseInt(qtyInput.value) + delta);
+  qtyInput.value = newQty;
+  items[index].qty = newQty;
+  calculateAll();
+}
+
+function saveData() {
+  localStorage.setItem("nagel_items", JSON.stringify(items));
+  localStorage.setItem("nagel_memberCount", document.getElementById("memberCount").value);
+}
+
+function loadData() {
+  const savedItems = JSON.parse(localStorage.getItem("nagel_items"));
+  if (savedItems) {
+    savedItems.forEach((data, i) => {
+      items[i].qty = data.qty;
+      items[i].price = data.price;
+    });
+  }
+  const savedCount = localStorage.getItem("nagel_memberCount");
+  if (savedCount) document.getElementById("memberCount").value = savedCount;
+}
+
+function calculateAll() {
+  const memberCount = parseInt(document.getElementById("memberCount").value) || 13;
+  let grandTotal = 0;
+
+  items.forEach((item, index) => {
+    const total = item.qty * item.price;
+    grandTotal += total;
+    const split = total / memberCount;
+    document.getElementById(`total-${index}`).textContent = formatKoreanUnit(total);
+    document.getElementById(`split-${index}`).textContent = formatKoreanUnit(split);
+  });
+
+  const grandSplit = grandTotal / memberCount;
+  document.getElementById("grandTotal").textContent = formatKoreanUnit(grandTotal);
+  document.getElementById("grandSplit").textContent = formatKoreanUnit(grandSplit);
+
+  const carrotCount = Math.floor(grandSplit / carrotUnit);
+  const carrotRest = grandSplit % carrotUnit;
+  document.getElementById("carrotInfo").textContent = `${carrotCount}개 + ${formatKoreanUnit(carrotRest)}`;
+
+  saveData();
+}
+
+document.getElementById("itemTable").innerHTML = items.map(createRow).join("");
+loadData();
+calculateAll();
+</script>
+
+</body>
+</html>
