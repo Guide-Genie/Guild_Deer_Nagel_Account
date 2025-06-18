@@ -373,7 +373,8 @@ function calculateAll() {
   document.getElementById("grandTotal").textContent = formatKoreanUnit(grandTotal);
   document.getElementById("grandSplit").textContent = formatKoreanUnit(grandSplit);
 document.getElementById("carrotInfo").textContent = `${Math.floor(grandSplit / carrotUnit)}개 + ${formatKoreanUnit(grandSplit % carrotUnit)}`;
-document.getElementById("carrotGoldOnly").textContent = formatKoreanUnit(grandSplit % carrotUnit);
+document.getElementById("carrotGoldOnly").textContent = Math.floor(grandSplit % carrotUnit);
+
 
 
   document.getElementById("copyGold").textContent = Math.floor(grandTotal / 100000) * 100000;
