@@ -90,6 +90,32 @@
       min-width: 150px;
       text-align: right;
     }
+    .copy-box {
+      margin-top: 15px;
+      background: #1c1c1c;
+      border: 1px solid #444;
+      padding: 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #copyGold {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #00ff88;
+    }
+    button.copy-btn {
+      background: #444;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button.copy-btn:hover {
+      background: #666;
+    }
   </style>
 </head>
 <body>
@@ -100,7 +126,7 @@
 </h1>
 
 <label>파티 인원수:
-  <input type="number" id="memberCount" value="1" min="1" onchange="calculateAll()">
+  <input type="number" id="memberCount" value="13" min="1" max="13" onchange="calculateAll()">
 </label>
 
 <table border="0">
@@ -121,6 +147,10 @@
   1/N 금액: <span id="grandSplit">0</span>
   <div class="unit-line">
     <img src="resized/Carrot_Fabric.png" alt="캐롯원단"> 환산: <span id="carrotInfo">-</span>
+  </div>
+  <div class="copy-box">
+    복사용 숫자 합계: <span id="copyGold">0</span>
+    <button class="copy-btn" onclick="copyTotalToClipboard()">복사하기</button>
   </div>
 </div>
 
@@ -203,6 +233,13 @@ function loadData() {
   if (savedCount) document.getElementById("memberCount").value = savedCount;
 }
 
+function copyTotalToClipboard() {
+  const value = document.getElementById("copyGold").textContent;
+  navigator.clipboard.writeText(value).then(() => {
+    alert("총 합계 금액이 복사되었습니다: " + value);
+  });
+}
+
 function calculateAll() {
   const memberCount = parseInt(document.getElementById("memberCount").value) || 13;
   let grandTotal = 0;
@@ -216,8 +253,11 @@ function calculateAll() {
   });
 
   const grandSplit = grandTotal / memberCount;
+  const roundedTotal = Math.floor(grandTotal / 100000) * 100000;
+
   document.getElementById("grandTotal").textContent = formatKoreanUnit(grandTotal);
   document.getElementById("grandSplit").textContent = formatKoreanUnit(grandSplit);
+  document.getElementById("copyGold").textContent = roundedTotal.toLocaleString();
 
   const carrotCount = Math.floor(grandSplit / carrotUnit);
   const carrotRest = grandSplit % carrotUnit;
