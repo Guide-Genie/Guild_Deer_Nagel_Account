@@ -264,10 +264,16 @@ function calculateAll() {
 
   items.forEach((item, index) => {
     const total = item.qty * item.price;
-    grandTotal += total;
     const split = total / memberCount;
-    document.getElementById(`total-${index}`).textContent = formatKoreanUnit(total);
-    document.getElementById(`split-${index}`).textContent = formatKoreanUnit(split);
+
+    if (item.qty === 0) {
+      document.getElementById(`total-${index}`).textContent = "0";
+      document.getElementById(`split-${index}`).textContent = "0";
+    } else {
+      grandTotal += total;
+      document.getElementById(`total-${index}`).textContent = formatKoreanUnit(total);
+      document.getElementById(`split-${index}`).textContent = formatKoreanUnit(split);
+    }
   });
 
   const grandSplit = grandTotal / memberCount;
